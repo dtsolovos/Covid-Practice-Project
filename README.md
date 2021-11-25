@@ -85,19 +85,20 @@ FROM covid_project..covid_data
 GROUP BY continent
 ```
 ![Continental Graphs](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/ContGraph.png)
-According to the data, Asia and Europe have the most recorded cases and deaths, which is not suriprising, given that they are the 2 most densely populated continents. While South America has nearly 20,000,000 less recorded Covid-19 cases than North America, it also has less than 30,000 fewer recorded deaths, with the death rate being the highest in the world at 3,04%. Surprisingly, despite having the 2nd largest population count (~1.4bn) and 3rd largest population density (33.66 per squared km), Africa has only 8,570,208 recorded Covid-19 cases, at just 0,62% of its population. The low median age (18 years) of sub-Saharan Africa, insufficient data collection, and lack of long-term care facilities (most elderly people live with their families) are some of the most prevalent theories pertaining to this. Oceania has the second lowest infection percentage (0,67% of the population), which is not unexpected, considering the continent's isolated location, incredibly low population density (just 3.12 per squared km) and fast goverment responses to the situation.
+According to the data, Asia and Europe have the most recorded cases and deaths, which is not surprising, given that they are the 2 most densely populated continents. While South America has nearly 20,000,000 less recorded Covid-19 cases than North America, it also has less than 30,000 fewer recorded deaths, with the death rate being the highest in the world at 3,04%. Surprisingly, despite having the 2nd largest population count (~1.4bn) and 3rd largest population density (33.66 per squared km), Africa has only 8,570,208 recorded Covid-19 cases, at just 0,62% of its population. The low median age (18 years) of sub-Saharan Africa, insufficient data collection, and lack of long-term care facilities (most elderly people live with their families, thus limiting the virus' spread) are some of the most prevalent theories pertaining to this. Oceania has the second lowest infection percentage (0,67% of the population), which is not unexpected, considering the continent's isolated location, incredibly low population density (just 3.12 per squared km) and fast goverment responses to the situation.
 
 ### Country Data
-I already had the data I needed ready for this, so I only needed to write a simple query (as opposed to the other, mindbogglingly complicated, queries). This time, I did not round up the results, because during the first several days of reporting the percentages were very small and the values would be rounded to zeros.
+I already had the data I needed ready for this, so I only needed to write a simple query (as opposed to the other, mindbogglingly complicated ones). This time, I did not round up the results, because during the first several days of reporting the percentages were very small and the values would be rounded to zeros. I then turned the results into a map graph.
 ```
 SELECT location,
-	   population,
-	   reported_cases,
-	   reported_deaths,
-	   (reported_cases / NULLIF(population, 0)) * 100 AS infected_percentage,
-	   (reported_deaths / NULLIF(reported_cases, 0)) * 100 AS death_percentage
+       population,
+       reported_cases,
+       reported_deaths,
+       (reported_cases / NULLIF(population, 0)) * 100 AS infected_percentage,
+       (reported_deaths / NULLIF(reported_cases, 0)) * 100 AS death_percentage
 FROM covid_project..covid_data
 ```
+![Country Infection Percentage](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/Country%20Infection%20Percentage.png)
 
 ### Income Data
 The "location" field also contained a few income records. I decided it would be interesting to look at the matter from this angle, so I wrote the following query to create a table to visualize. The records were split into high income, upper-middle income, lower-middle income, and low income, which is why I used ```LIKE '%income%'```. Since I had filtered these records out when I created the "covid_data" view, I decided to create a temp table for this. 
@@ -125,9 +126,13 @@ SELECT *,
        ROUND((reported_deaths / reported_cases) * 100, 2) AS death_percentage
 FROM #income_data
 ```
+![Income Graph](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/StatsByIncome.png)
+The high income population has the most recorded Covid-19 cases, by far, while the low income population has the fewest ones. To the shock of no one in particular, the opposite is true when it comes to death rates. The 2.7% of the infected low income population die, followed by 2.66% of the upper middle income, 1.8% of the lower middle income, and 1,63% of the high income population.
+
+
 
 ### Vaccination Data
-Finally, this one I only wanted to explore without visualizing it, and it also served as practice for joining tables
+Finally, this one I only wanted to explore without visualizing it, and it also served as practice for joining tables.
 ```
 IF OBJECT_ID('tempdb.dbo.#vac_per', 'U') IS NOT NULL
   DROP TABLE #vac_per;
