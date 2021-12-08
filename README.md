@@ -3,13 +3,13 @@
 ## About
 
 This is a portfolio project to practice on SQL and Tableau. In it, I used what I have learned on SQL so far, along with some new knowledge acquired while trying to solve some problems that occured. Some ways may be faster or easier than others, but I needed the practice and used all of them.
-I got the dataset from [Our World In Data](https://ourworldindata.org/covid-deaths) and split it in 2 (cases/deaths and vaccinations), so that I could also practice JOINs. I was very curious to explore Covid data myself, so the whole project was incredibly interesting to me.
+I got the dataset from [Our World In Data](https://ourworldindata.org/covid-deaths). I was very curious to explore Covid data myself, so the whole project was incredibly interesting to me.
 
-Here is the [Talbeau dashboard](https://public.tableau.com/views/CovidProject_16377520725710/Dashboard1?:language=en-US&:display_count=n&:origin=viz_share_link) I created, with some of the resulting tables here.
+Here is the resulting [Talbeau dashboard](https://public.tableau.com/views/CovidProject_16377520725710/Dashboard1?:language=en-US&:display_count=n&:origin=viz_share_link) I created.
 
 ## Project
 
-After splitting the dataset in Excel, I imported the data into SQL Server into 2 tables (CovidDeaths and CovidVaccinations), using the Import and Export Wizard.
+I imported the data into SQL Server using the Import and Export Wizard.
 
 First, I created a view containing only the variables I would be using most often. The "location" field contains not just country names, but also aggregate fields like "Asia" or "European Union" and "World" (I have no idea why). The "continent" fields of these particular records were left empty, so I tried to filter them out using ```IS NOT NULL```, but it did not work. It turned out that these "continent" fields were not actually blank but contained a space, so I used ```NOT IN(' ')```. The "total_cases" and "total_deaths" fields contain the total values up to each day, so the max values would be the actual total cases and deaths up to 17/11/2021. Their initial data type was bigint, but I needed to perform divisions which would result in decimal numbers, so I cast them as floats. 
 ```
@@ -85,7 +85,7 @@ FROM covid_project..covid_data
 GROUP BY continent
 ```
 ![Continental Graphs](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/ContGraph.png)
-According to the data, Asia and Europe have the most recorded cases and deaths, which is not surprising, given that they are the 2 most densely populated continents. While South America has nearly 20,000,000 less recorded Covid-19 cases than North America, it also has less than 30,000 fewer recorded deaths, with the death rate being the highest in the world at 3,04%. Surprisingly, despite having the 2nd largest population count (~1.4bn) and 3rd largest population density (33.66 per squared km), Africa has only 8,570,208 recorded Covid-19 cases, at just 0,62% of its population. The low median age (18 years) of sub-Saharan Africa, insufficient data collection, and lack of long-term care facilities (most elderly people live with their families, thus limiting the virus' spread) are some of the most prevalent theories pertaining to this. Oceania has the second lowest infection percentage (0,67% of the population), which is not unexpected, considering the continent's isolated location, incredibly low population density (just 3.12 per squared km) and fast goverment responses to the situation.
+According to the data, Asia and Europe have the most recorded cases and deaths, which is not surprising, given that they are the 2 most densely populated continents. While South America has nearly 20,000,000 less recorded Covid-19 cases than North America, it also has less than 30,000 fewer recorded deaths, with their 3,04% death rate being the highest in the world. Surprisingly, despite having the 2nd largest population count (~1.4bn) and 3rd largest population density (33.66 per squared km), Africa has only 8,570,208 recorded Covid-19 cases, just 0,62% of its population. The low median age (18 years) of sub-Saharan Africa, insufficient data collection, and lack of long-term care facilities (most elderly people live with their families, thus limiting the virus' spread) are some of the most prevalent theories pertaining to this. Oceania has the second lowest infection percentage (0,67% of the population), which is not unexpected, considering the continent's isolated location, incredibly low population density (just 3.12 per squared km) and fast goverment responses to the situation.
 
 ### Country Data
 I already had the data I needed ready for this, so I only needed to write a simple query (as opposed to the other, mindbogglingly complicated ones). This time, I did not round up the results, because during the first several days of reporting the percentages were very small and the values would be rounded to zeros. I then turned the results into a map graph.
@@ -101,7 +101,7 @@ FROM covid_project..covid_data
 ![Country Infection Percentage](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/Country%20Infection%20Percentage.png)
 
 ### Income Data
-The "location" field also contained a few income records. I decided it would be interesting to look at the matter from this angle, so I wrote the following query to create a table to visualize. The records were split into high income, upper-middle income, lower-middle income, and low income, which is why I used ```LIKE '%income%'```. Since I had filtered these records out when I created the "covid_data" view, I decided to create a temp table for this. 
+The "location" field also contained a few income records. I was very curious about this perspective, so I wrote the following query to create a table to visualize. The records were split into *high income*, *upper-middle income*, *lower-middle income*, and *low income*, which is why I used ```LIKE '%income%'```. Since I had filtered these records out when I created the "covid_data" view, I decided to create a temp table for this. 
 ```
 IF OBJECT_ID('tempdb.dbo.#income_data', 'U') IS NOT NULL
   DROP TABLE #income_data;
@@ -127,44 +127,8 @@ SELECT *,
 FROM #income_data
 ```
 ![Income Graph](https://github.com/dtsolovos/Covid-Practice-Project/blob/main/StatsByIncome.png)
+
 The high income population has the most recorded Covid-19 cases, by far, while the low income population has the fewest ones. To the shock of no one in particular, the opposite is true when it comes to death rates. The 2.7% of the infected low income population die, followed by 2.66% of the upper middle income, 1.8% of the lower middle income, and 1,63% of the high income population.
-
-
-
-### Vaccination Data
-Finally, this one I only wanted to explore without visualizing it, and it also served as practice for joining tables.
-```
-IF OBJECT_ID('tempdb.dbo.#vac_per', 'U') IS NOT NULL
-  DROP TABLE #vac_per;
-CREATE TABLE #vac_per
-	(
-	  continent varchar(30),
-	  location varchar(30),
-	  date datetime,
-	  population bigint,
-	  new_vaccinations float,
-	  vaccinations_cont float
-	 )
-INSERT INTO #vac_per
-SELECT cd.continent,
-       cd.location,
-       cd.date,
-       cd.population,
-       cv.new_vaccinations,
-       SUM(cv.new_vaccinations) 
-         OVER (PARTITION BY cd.location ORDER BY cd.location, cd.date) AS vaccinations_cont
-FROM covid_project..CovidDeaths cd
-  JOIN covid_project..CovidVaccinations cv
-	ON cd.location = cv.location
-	AND cd.date = cv.date
-WHERE cd.continent NOT IN (' ')
-
-SELECT *,
-       ROUND(vaccinations_cont / NULLIF(population, 0) * 100, 3) AS vaccination_percentage
-FROM #vac_per
-ORDER BY location,
-         date
-```
 
 
 
